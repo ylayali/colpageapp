@@ -6,7 +6,7 @@ import { AuthDialog } from '@/components/auth-dialog';
 import { PasswordDialog } from '@/components/password-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth-context';
-import { useCredits } from '@/lib/credit-utils';
+import { useCredits as consumeCredits } from '@/lib/credit-utils';
 import { db, type ImageRecord } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import * as React from 'react';
@@ -206,7 +206,7 @@ export default function HomePage() {
 
                 // Decrease user credits in database
                 try {
-                    await useCredits(user.email, 1);
+                    await consumeCredits(user.email, 1);
                     refreshCredits(); // Refresh the user data to show updated credits
                 } catch (creditError) {
                     console.error('Error updating credits:', creditError);
