@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
                     prompt,
                     image: [imageFile],
                     n: Math.max(1, Math.min(n || 1, 10)),
-                    size: size === 'auto' ? undefined : (size as any),
+                    size: size === 'auto' ? undefined : (size as OpenAI.Images.ImageEditParams['size']),
                     quality: quality === 'auto' ? undefined : quality
                 };
 

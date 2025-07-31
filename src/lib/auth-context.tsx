@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, User } from './supabase'
-import { getOrCreateUser, getCreditBalance } from './credit-utils'
+import { getOrCreateUser } from './credit-utils'
 
 interface AuthContextType {
   user: User | null

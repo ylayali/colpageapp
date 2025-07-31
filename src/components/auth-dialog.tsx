@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export function AuthDialog() {
-  const { signIn, signUp, user, signOut } = useAuth()
+  const { signIn, user, signOut } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,25 +25,8 @@ export function AuthDialog() {
       setOpen(false)
       setEmail('')
       setPassword('')
-    } catch (error: any) {
-      setError(error.message || 'Failed to sign in')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    
-    try {
-      await signUp(email, password)
-      setOpen(false)
-      setEmail('')
-      setPassword('')
-    } catch (error: any) {
-      setError(error.message || 'Failed to sign up')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to sign in')
     } finally {
       setLoading(false)
     }
@@ -53,8 +35,8 @@ export function AuthDialog() {
   const handleSignOut = async () => {
     try {
       await signOut()
-    } catch (error: any) {
-      setError(error.message || 'Failed to sign out')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to sign out')
     }
   }
 
@@ -116,7 +98,7 @@ export function AuthDialog() {
             </Button>
           </form>
           <div className="text-xs text-muted-foreground text-center border-t pt-4">
-            Don't have an account? <br/>
+            Don&apos;t have an account? <br/>
             <a 
               href="https://FarawayGrandparents.com/colorpages-packages" 
               target="_blank" 

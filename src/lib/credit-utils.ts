@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin, User } from './supabase'
+import { supabaseAdmin, User } from './supabase'
 
 export const INITIAL_CREDITS = 0   // No free credits - users must sign up through GrooveFunnels
 export const TRIAL_CREDITS = 3     // Credits given during GrooveFunnels 1-week trial
@@ -155,7 +155,7 @@ export async function addCredits(email: string, amount: number, subscriptionType
   try {
     const user = await getOrCreateUser(email)
     
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       credits: user.credits + amount,
       updated_at: new Date().toISOString()
     }
@@ -177,7 +177,7 @@ export async function addCredits(email: string, amount: number, subscriptionType
     }
     const { data, error } = await supabaseAdmin
       .from('users')
-      .update(updateData)
+      .update(updateData as Record<string, unknown>)
       .eq('email', email)
       .select()
       .single()

@@ -45,31 +45,32 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in credits API:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json({ 
-      error: error.message || 'Failed to process credit request' 
+      error: errorMessage 
     }, { status: 500 })
   }
 }
 
-// GET endpoint to check credit balance
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
-
+    
     if (!email) {
-      return NextResponse.json({ error: 'Email parameter is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Email parameter required' }, { status: 400 })
     }
 
-    const balance = await getCreditBalance(email)
-    return NextResponse.json({ credits: balance })
-
-  } catch (error: any) {
-    console.error('Error getting credit balance:', error)
+    const credits = await getCreditBalance(email)
+    return NextResponse.json({ credits })
+    
+  } catch (error: unknown) {
+    console.error('Error getting credits:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json({ 
-      error: error.message || 'Failed to get credit balance' 
+      error: errorMessage 
     }, { status: 500 })
   }
 }

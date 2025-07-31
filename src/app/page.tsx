@@ -5,9 +5,8 @@ import { ColoringOutput } from '@/components/coloring-output';
 import { AuthDialog } from '@/components/auth-dialog';
 import { PasswordDialog } from '@/components/password-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { calculateApiCost, type CostDetails } from '@/lib/cost-utils';
 import { useAuth } from '@/lib/auth-context';
-import { hasEnoughCredits, useCredits } from '@/lib/credit-utils';
+import { useCredits } from '@/lib/credit-utils';
 import { db, type ImageRecord } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import * as React from 'react';
@@ -48,9 +47,10 @@ export default function HomePage() {
     const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
     
     // Use real authentication system
-    const { user, loading: authLoading, refreshCredits } = useAuth();
+    const { user, refreshCredits } = useAuth();
 
-    const allDbImages = useLiveQuery<ImageRecord[] | undefined>(() => db.images.toArray(), []);
+    // Keep this for potential future use
+    useLiveQuery<ImageRecord[] | undefined>(() => db.images.toArray(), []);
 
     React.useEffect(() => {
         return () => {
@@ -115,10 +115,6 @@ export default function HomePage() {
         }
     };
 
-    const handleOpenPasswordDialog = () => {
-        setPasswordDialogContext('initial');
-        setIsPasswordDialogOpen(true);
-    };
 
     const getMimeTypeFromFormat = (format: string): string => {
         if (format === 'jpeg') return 'image/jpeg';
@@ -211,7 +207,7 @@ export default function HomePage() {
                 // Decrease user credits in database
                 try {
                     await useCredits(user.email, 1);
-                    await refreshCredits(); // Refresh the user data to show updated credits
+                    refreshCredits(); // Refresh the user data to show updated credits
                 } catch (creditError) {
                     console.error('Error updating credits:', creditError);
                     // Don't fail the whole operation if credit update fails
