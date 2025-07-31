@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
             if (imageFile) {
                 // This is a coloring page generation request - use the edit endpoint with the photo
                 const n = parseInt((formData.get('n') as string) || '1', 10);
-                const size = (formData.get('size') as OpenAI.Images.ImageEditParams['size']) || '1024x1536';
+                const size = (formData.get('size') as string) || '1024x1536';
                 const quality = (formData.get('quality') as OpenAI.Images.ImageEditParams['quality']) || 'high';
 
                 const params: OpenAI.Images.ImageEditParams = {
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
                     prompt,
                     image: [imageFile],
                     n: Math.max(1, Math.min(n || 1, 10)),
-                    size: size === 'auto' ? undefined : size,
+                    size: size === 'auto' ? undefined : (size as any),
                     quality: quality === 'auto' ? undefined : quality
                 };
 
