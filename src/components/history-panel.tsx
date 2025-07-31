@@ -1,6 +1,5 @@
 'use client';
 
-import type { HistoryMetadata } from '@/app/page';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -29,6 +28,26 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
+
+// Define the HistoryMetadata type based on usage in the component
+interface HistoryMetadata {
+    timestamp: number;
+    images: Array<{ filename: string }>;
+    costDetails?: {
+        estimated_cost_usd: number;
+        text_input_tokens: number;
+        image_input_tokens: number;
+        image_output_tokens: number;
+    };
+    mode: 'edit' | 'generate';
+    durationMs: number;
+    quality: string;
+    background: string;
+    moderation: string;
+    prompt?: string;
+    storageModeUsed?: 'fs' | 'indexeddb';
+    output_format?: string;
+}
 
 type HistoryPanelProps = {
     history: HistoryMetadata[];
