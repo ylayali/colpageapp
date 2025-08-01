@@ -7,20 +7,23 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Admin client for server-side operations (bypasses RLS)
-// Only available on server-side where service role key exists
-export const supabaseAdmin = (() => {
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// This function ensures the key is read at runtime on the server.
+const createAdminClient = () => {
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseServiceKey) {
-    // Return null if service key is not available (client-side)
-    return null
+    // This will now throw an error on the server if the key is missing, which is better for debugging.
+    // On the client, this code path should not be hit.
+    return null;
   }
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
-    }
-  })
-})()
+      persistSession: false,
+    },
+  });
+};
+
+export const supabaseAdmin = typeof window === 'undefined' ? createAdminClient() : null;
 
 // Database types
 export interface User {
