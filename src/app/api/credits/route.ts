@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     console.log('Received webhook body:', JSON.stringify(body, null, 2));
-    const { email, subscription_type, action } = body
+    const { buyer_email: email, subscription_type, action } = body
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
