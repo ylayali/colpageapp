@@ -216,6 +216,25 @@ export async function addCredits(email: string, amount: number, subscriptionType
 
     console.log(`[addCredits] Updating user ${userWithCredits.id} with:`, updateData);
 
+    // First, verify the user still exists before updating
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userWithCredits.id)
+      .single()
+
+    if (checkError) {
+      console.error(`[addCredits] User verification failed:`, checkError);
+      throw new CreditError(`User verification failed: ${checkError.message}`, 'USER_VERIFICATION_ERROR')
+    }
+
+    if (!existingUser) {
+      console.error(`[addCredits] User ${userWithCredits.id} not found in database`);
+      throw new CreditError('User not found in database', 'USER_NOT_FOUND_IN_DB')
+    }
+
+    console.log(`[addCredits] User verified, current credits: ${existingUser.credits}`);
+
     const { data, error } = await supabase
       .from('users')
       .update(updateData as Record<string, unknown>)
