@@ -22,8 +22,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) {
-        loadUserData(session.user.email)
+      if (session?.user) {
+        loadUserData(session.user.id, session.user.email!)
       } else {
         setLoading(false)
       }
@@ -31,8 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user?.email) {
-        await loadUserData(session.user.email)
+      if (session?.user) {
+        await loadUserData(session.user.id, session.user.email!)
       } else {
         setUser(null)
         setLoading(false)
@@ -42,9 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const loadUserData = async (email: string) => {
+  const loadUserData = async (id: string, email: string) => {
     try {
-      const userData = await getOrCreateUser(email)
+      const userData = await getOrCreateUser(id, email)
       setUser(userData)
     } catch (error) {
       console.error('Error loading user data:', error)
@@ -77,8 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const refreshCredits = async () => {
-    if (user?.email) {
-      await loadUserData(user.email)
+    if (user) {
+      await loadUserData(user.id, user.email)
     }
   }
 

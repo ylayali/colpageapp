@@ -43,7 +43,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 // Create a new user with initial credits
-export async function createUser(email: string): Promise<User> {
+export async function createUser(id: string, email: string): Promise<User> {
   try {
     if (!supabaseAdmin) {
       throw new CreditError('Admin client not available', 'NO_ADMIN_CLIENT')
@@ -51,6 +51,7 @@ export async function createUser(email: string): Promise<User> {
     const { data, error } = await supabaseAdmin
       .from('users')
       .insert({
+        id,
         email,
         credits: INITIAL_CREDITS,
         subscription_type: null,
@@ -73,12 +74,12 @@ export async function createUser(email: string): Promise<User> {
 }
 
 // Get or create user (useful for first-time users)
-export async function getOrCreateUser(email: string): Promise<User> {
+export async function getOrCreateUser(id: string, email: string): Promise<User> {
   try {
     let user = await getUserByEmail(email)
     
     if (!user) {
-      user = await createUser(email)
+      user = await createUser(id, email)
     }
 
     return user
@@ -153,10 +154,14 @@ export async function useCredits(email: string, amount: number = 1): Promise<Use
 // Add credits (for purchases)
 export async function addCredits(email: string, amount: number, subscriptionType?: 'monthly' | 'yearly'): Promise<User> {
   try {
-    const user = await getOrCreateUser(email)
+    const user = await getUserByEmail(email);
+    if (!user) {
+      throw new CreditError('User not found', 'USER_NOT_FOUND');
+    }
+    const userWithCredits = await getOrCreateUser(user.id, email)
     
     const updateData: Record<string, unknown> = {
-      credits: user.credits + amount,
+      credits: userWithCredits.credits + amount,
       updated_at: new Date().toISOString()
     }
 
