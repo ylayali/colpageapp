@@ -246,7 +246,12 @@ export async function addCredits(email: string, amount: number, subscriptionType
 
     console.log(`[addCredits] User verified, current credits: ${existingUser.credits}`);
 
-    const { data, error } = await supabase
+    // Use admin client for updates to bypass RLS
+    if (!supabaseAdmin) {
+      throw new CreditError('Admin client not available for update', 'NO_ADMIN_CLIENT_UPDATE')
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('users')
       .update(updateData as Record<string, unknown>)
       .eq('id', userWithCredits.id)
