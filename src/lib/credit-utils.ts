@@ -108,7 +108,8 @@ export async function signUpUser(email: string, password?: string): Promise<stri
     // If the error is because the user already exists, that's fine - get their ID
     if (error.message.includes('User already registered') || 
         error.message.includes('already exists') ||
-        error.message.includes('already registered')) {
+        error.message.includes('already registered') ||
+        error.message.includes('has already been registered')) {
       const existingUser = await getUserByEmail(email);
       return existingUser?.id || null;
     }
@@ -211,7 +212,7 @@ export async function addCredits(email: string, amount: number, subscriptionType
     const { data, error } = await supabase
       .from('users')
       .update(updateData as Record<string, unknown>)
-      .eq('email', email)
+      .eq('id', userWithCredits.id)
       .select()
       .single()
 
@@ -220,7 +221,7 @@ export async function addCredits(email: string, amount: number, subscriptionType
     }
 
     // Log the transaction
-    await logCreditTransaction(user.id, amount, 'purchase', `${subscriptionType || 'manual'} credit purchase`)
+    await logCreditTransaction(userWithCredits.id, amount, 'purchase', `${subscriptionType || 'manual'} credit purchase`)
 
     return data
   } catch (error) {
