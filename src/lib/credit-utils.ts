@@ -181,11 +181,16 @@ export async function useCredits(email: string, amount: number = 1): Promise<Use
 // Add credits (for purchases)
 export async function addCredits(email: string, amount: number, subscriptionType?: 'monthly' | 'yearly', authUserId?: string): Promise<User> {
   try {
+    console.log(`[addCredits] Starting for email: ${email}, amount: ${amount}, authUserId: ${authUserId}`);
+    
     let user = await getUserByEmail(email);
+    console.log(`[addCredits] Found existing user:`, user ? `ID: ${user.id}, credits: ${user.credits}` : 'null');
     
     if (!user && authUserId) {
       // User doesn't exist in public table but we have their auth ID, so create them
+      console.log(`[addCredits] Creating new user with authUserId: ${authUserId}`);
       user = await createUser(authUserId, email);
+      console.log(`[addCredits] Created user:`, user ? `ID: ${user.id}, credits: ${user.credits}` : 'null');
     } else if (!user) {
       throw new CreditError('User not found and no auth ID provided', 'USER_NOT_FOUND');
     }
@@ -209,6 +214,8 @@ export async function addCredits(email: string, amount: number, subscriptionType
       updateData.subscription_expires_at = expirationDate.toISOString()
     }
 
+    console.log(`[addCredits] Updating user ${userWithCredits.id} with:`, updateData);
+
     const { data, error } = await supabase
       .from('users')
       .update(updateData as Record<string, unknown>)
@@ -217,14 +224,18 @@ export async function addCredits(email: string, amount: number, subscriptionType
       .single()
 
     if (error) {
+      console.error(`[addCredits] Update failed:`, error);
       throw new CreditError(`Failed to add credits: ${error.message}`, 'ADD_CREDITS_ERROR')
     }
+
+    console.log(`[addCredits] Update successful:`, data);
 
     // Log the transaction
     await logCreditTransaction(userWithCredits.id, amount, 'purchase', `${subscriptionType || 'manual'} credit purchase`)
 
     return data
   } catch (error) {
+    console.error(`[addCredits] Error:`, error);
     if (error instanceof CreditError) {
       throw error
     }

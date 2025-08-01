@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       let subscriptionTypeForDb: 'monthly' | 'yearly' | undefined
 
       // Only process specific events to avoid duplicate credit additions
-      if (event === 'subscription-trial-start') {
-        // Trial start - give trial credits
+      if (event === 'sales' && parseFloat(body.amount || '0') === 0) {
+        // Trial sales event (amount = 0) - give trial credits
         creditsToAdd = TRIAL_CREDITS
         subscriptionTypeForDb = undefined // Don't set subscription type for trial
       } else if (event === 'subscription-payment' && parseFloat(body.amount || '0') > 0) {
