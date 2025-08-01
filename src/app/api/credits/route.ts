@@ -5,34 +5,53 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     console.log('Received webhook body:', JSON.stringify(body, null, 2));
-    const { buyer_email: email, subscription_type, action, password } = body
+    const { buyer_email: email, subscription_type, event, password, action } = body
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
+    // Handle manual API calls with action parameter
     if (action === 'get_balance') {
       const balance = await getCreditBalance(email)
       return NextResponse.json({ credits: balance })
     }
 
-    if (action === 'add_credits') {
-      if (!subscription_type || !['trial', 'monthly', 'yearly'].includes(subscription_type)) {
-        return NextResponse.json({ error: 'Valid subscription_type is required (trial, monthly, or yearly)' }, { status: 400 })
-      }
-
+    // Handle GrooveSell webhook events or manual add_credits calls
+    if (event || action === 'add_credits') {
       let creditsToAdd: number
       let subscriptionTypeForDb: 'monthly' | 'yearly' | undefined
 
-      if (subscription_type === 'trial') {
+      // Only process specific events to avoid duplicate credit additions
+      if (event === 'subscription-trial-start') {
+        // Trial start - give trial credits
         creditsToAdd = TRIAL_CREDITS
         subscriptionTypeForDb = undefined // Don't set subscription type for trial
-      } else if (subscription_type === 'monthly') {
+      } else if (event === 'subscription-payment' && parseFloat(body.amount || '0') > 0) {
+        // Paid subscription payment (amount > 0)
         creditsToAdd = MONTHLY_CREDITS
         subscriptionTypeForDb = 'monthly'
+      } else if (action === 'add_credits') {
+        // Manual API call
+        if (subscription_type === 'trial') {
+          creditsToAdd = TRIAL_CREDITS
+          subscriptionTypeForDb = undefined
+        } else if (subscription_type === 'monthly') {
+          creditsToAdd = MONTHLY_CREDITS
+          subscriptionTypeForDb = 'monthly'
+        } else if (subscription_type === 'yearly') {
+          creditsToAdd = YEARLY_CREDITS
+          subscriptionTypeForDb = 'yearly'
+        } else {
+          creditsToAdd = TRIAL_CREDITS
+          subscriptionTypeForDb = undefined
+        }
       } else {
-        creditsToAdd = YEARLY_CREDITS
-        subscriptionTypeForDb = 'yearly'
+        // Ignore other events (like "sales" or $0.00 "subscription-payment")
+        return NextResponse.json({
+          success: true,
+          message: `Event '${event}' ignored - no credits added`
+        })
       }
 
       // First, ensure the user exists in the auth system
@@ -43,11 +62,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         user: updatedUser,
-        message: `Added ${creditsToAdd} credits for ${subscription_type}`
+        message: `Added ${creditsToAdd} credits for ${event || subscription_type || 'purchase'}`
       })
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid request - no valid action or event found' }, { status: 400 })
 
   } catch (error: unknown) {
     console.error('Error in credits API:', error)
