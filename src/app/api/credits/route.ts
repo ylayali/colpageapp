@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addCredits, getCreditBalance, TRIAL_CREDITS, MONTHLY_CREDITS, YEARLY_CREDITS } from '@/lib/credit-utils'
+import { addCredits, getCreditBalance, signUpUser, TRIAL_CREDITS, MONTHLY_CREDITS, YEARLY_CREDITS } from '@/lib/credit-utils'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     console.log('Received webhook body:', JSON.stringify(body, null, 2));
-    const { buyer_email: email, subscription_type, action } = body
+    const { buyer_email: email, subscription_type, action, password } = body
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
@@ -35,7 +35,10 @@ export async function POST(request: NextRequest) {
         subscriptionTypeForDb = 'yearly'
       }
 
-      const updatedUser = await addCredits(email, creditsToAdd, subscriptionTypeForDb)
+      // First, ensure the user exists in the auth system
+      const authUserId = await signUpUser(email, password)
+
+      const updatedUser = await addCredits(email, creditsToAdd, subscriptionTypeForDb, authUserId || undefined)
       
       return NextResponse.json({
         success: true,

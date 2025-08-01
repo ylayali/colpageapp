@@ -1,4 +1,4 @@
-import { supabase, User } from './supabase'
+import { supabase, supabaseAdmin, User } from './supabase'
 
 export const INITIAL_CREDITS = 0   // No free credits - users must sign up through GrooveFunnels
 export const TRIAL_CREDITS = 3     // Credits given during GrooveFunnels 1-week trial
@@ -85,6 +85,41 @@ export async function getOrCreateUser(id: string, email: string): Promise<User> 
   }
 }
 
+// Sign up a new user in Supabase Auth
+export async function signUpUser(email: string, password?: string): Promise<string | null> {
+  if (!password) {
+    // If no password is provided, try to find existing user's ID
+    const existingUser = await getUserByEmail(email);
+    return existingUser?.id || null;
+  }
+
+  if (!supabaseAdmin) {
+    throw new CreditError('Admin client not available', 'NO_ADMIN_CLIENT')
+  }
+
+  // Try to create the user. If they already exist, Supabase will return an error.
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // Auto-confirm the user's email
+  })
+
+  if (error) {
+    // If the error is because the user already exists, that's fine - get their ID
+    if (error.message.includes('User already registered') || 
+        error.message.includes('already exists') ||
+        error.message.includes('already registered')) {
+      const existingUser = await getUserByEmail(email);
+      return existingUser?.id || null;
+    }
+    
+    // For any other error, throw it
+    throw new CreditError(`Failed to sign up user: ${error.message}`, 'SIGNUP_USER_ERROR')
+  }
+
+  return data.user?.id || null;
+}
+
 // Check if user has enough credits
 export async function hasEnoughCredits(email: string, requiredCredits: number = 1): Promise<boolean> {
   try {
@@ -143,13 +178,18 @@ export async function useCredits(email: string, amount: number = 1): Promise<Use
 }
 
 // Add credits (for purchases)
-export async function addCredits(email: string, amount: number, subscriptionType?: 'monthly' | 'yearly'): Promise<User> {
+export async function addCredits(email: string, amount: number, subscriptionType?: 'monthly' | 'yearly', authUserId?: string): Promise<User> {
   try {
-    const user = await getUserByEmail(email);
-    if (!user) {
-      throw new CreditError('User not found', 'USER_NOT_FOUND');
+    let user = await getUserByEmail(email);
+    
+    if (!user && authUserId) {
+      // User doesn't exist in public table but we have their auth ID, so create them
+      user = await createUser(authUserId, email);
+    } else if (!user) {
+      throw new CreditError('User not found and no auth ID provided', 'USER_NOT_FOUND');
     }
-    const userWithCredits = await getOrCreateUser(user.id, email)
+    
+    const userWithCredits = user;
     
     const updateData: Record<string, unknown> = {
       credits: userWithCredits.credits + amount,
