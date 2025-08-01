@@ -251,19 +251,29 @@ export async function addCredits(email: string, amount: number, subscriptionType
       .update(updateData as Record<string, unknown>)
       .eq('id', userWithCredits.id)
       .select()
-      .single()
 
     if (error) {
       console.error(`[addCredits] Update failed:`, error);
       throw new CreditError(`Failed to add credits: ${error.message}`, 'ADD_CREDITS_ERROR')
     }
 
-    console.log(`[addCredits] Update successful:`, data);
+    if (!data || data.length === 0) {
+      console.error(`[addCredits] No rows were updated for user ${userWithCredits.id}`);
+      throw new CreditError('No user record was updated', 'NO_ROWS_UPDATED')
+    }
+
+    if (data.length > 1) {
+      console.warn(`[addCredits] Multiple rows updated for user ${userWithCredits.id}, using first one`);
+    }
+
+    console.log(`[addCredits] Update successful:`, data[0]);
+    
+    const updatedUser = data[0];
 
     // Log the transaction
     await logCreditTransaction(userWithCredits.id, amount, 'purchase', `${subscriptionType || 'manual'} credit purchase`)
 
-    return data
+    return updatedUser
   } catch (error) {
     console.error(`[addCredits] Error:`, error);
     if (error instanceof CreditError) {
