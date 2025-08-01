@@ -26,7 +26,9 @@ export function AuthDialog() {
       setEmail('')
       setPassword('')
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'Failed to sign in')
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during sign-in.';
+      console.error('Sign-in error:', error);
+      setError(`Sign-in failed: ${errorMessage}`);
     } finally {
       setLoading(false)
     }
