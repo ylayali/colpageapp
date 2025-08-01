@@ -308,7 +308,13 @@ async function logCreditTransaction(
   description: string
 ): Promise<void> {
   try {
-    const { error } = await supabase
+    // Use admin client for transaction logging to bypass RLS
+    if (!supabaseAdmin) {
+      console.warn('Admin client not available for transaction logging, skipping...')
+      return
+    }
+
+    const { error } = await supabaseAdmin
       .from('credit_transactions')
       .insert({
         user_id: userId,
