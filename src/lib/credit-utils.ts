@@ -1,4 +1,4 @@
-import { supabaseAdmin, User } from './supabase'
+import { supabase, User } from './supabase'
 
 export const INITIAL_CREDITS = 0   // No free credits - users must sign up through GrooveFunnels
 export const TRIAL_CREDITS = 3     // Credits given during GrooveFunnels 1-week trial
@@ -16,10 +16,7 @@ export class CreditError extends Error {
 // Get user by email
 export async function getUserByEmail(email: string): Promise<User | null> {
   try {
-    if (!supabaseAdmin) {
-      throw new CreditError('Admin client not available', 'NO_ADMIN_CLIENT')
-    }
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
@@ -45,10 +42,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 // Create a new user with initial credits
 export async function createUser(id: string, email: string): Promise<User> {
   try {
-    if (!supabaseAdmin) {
-      throw new CreditError('Admin client not available', 'NO_ADMIN_CLIENT')
-    }
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('users')
       .insert({
         id,
@@ -122,10 +116,7 @@ export async function useCredits(email: string, amount: number = 1): Promise<Use
       throw new CreditError('Insufficient credits', 'INSUFFICIENT_CREDITS')
     }
 
-    if (!supabaseAdmin) {
-      throw new CreditError('Admin client not available', 'NO_ADMIN_CLIENT')
-    }
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('users')
       .update({ 
         credits: user.credits - amount,
@@ -177,10 +168,7 @@ export async function addCredits(email: string, amount: number, subscriptionType
       updateData.subscription_expires_at = expirationDate.toISOString()
     }
 
-    if (!supabaseAdmin) {
-      throw new CreditError('Admin client not available', 'NO_ADMIN_CLIENT')
-    }
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('users')
       .update(updateData as Record<string, unknown>)
       .eq('email', email)
@@ -223,11 +211,7 @@ async function logCreditTransaction(
   description: string
 ): Promise<void> {
   try {
-    if (!supabaseAdmin) {
-      console.error('Admin client not available for logging transaction')
-      return
-    }
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('credit_transactions')
       .insert({
         user_id: userId,
