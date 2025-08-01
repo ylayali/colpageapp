@@ -16,22 +16,33 @@ export class CreditError extends Error {
 // Get user by email
 export async function getUserByEmail(email: string): Promise<User | null> {
   try {
-    const { data, error } = await supabase
+    console.log(`[getUserByEmail] Searching for user with email: ${email}`);
+    
+    // First, let's check if there are multiple users with this email
+    const { data: allUsers, error: allUsersError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
-      .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned
-        return null
-      }
-      throw new CreditError(`Failed to get user: ${error.message}`, 'GET_USER_ERROR')
+    if (allUsersError) {
+      console.error(`[getUserByEmail] Error fetching all users:`, allUsersError);
+      throw new CreditError(`Failed to get users: ${allUsersError.message}`, 'GET_USERS_ERROR')
     }
 
-    return data
+    console.log(`[getUserByEmail] Found ${allUsers?.length || 0} users with email ${email}:`, allUsers);
+
+    if (!allUsers || allUsers.length === 0) {
+      console.log(`[getUserByEmail] No users found with email ${email}`);
+      return null;
+    }
+
+    if (allUsers.length > 1) {
+      console.warn(`[getUserByEmail] Multiple users found with email ${email}, using the first one`);
+    }
+
+    return allUsers[0];
   } catch (error) {
+    console.error(`[getUserByEmail] Error:`, error);
     if (error instanceof CreditError) {
       throw error
     }
