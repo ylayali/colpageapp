@@ -156,6 +156,12 @@ export function GenerationForm({
             </CardHeader>
             <form onSubmit={handleSubmit} className='flex h-full flex-1 flex-col overflow-hidden'>
                 <CardContent className='flex-1 space-y-5 overflow-y-auto p-4'>
+                    {isLoading && (
+                        <div className='rounded-md border border-yellow-400/50 bg-yellow-900/20 p-3 text-center text-sm text-yellow-200'>
+                            <p>Please allow 2-3 minutes for your coloring page to generate.</p>
+                            <p className='mt-1 text-yellow-200/70'>Feel free to close this window - your image will appear in the history panel when it's ready.</p>
+                        </div>
+                    )}
                     <div className='space-y-1.5'>
                         <Label htmlFor='prompt' className='text-white'>
                             Prompt
