@@ -1,6 +1,6 @@
 'use client';
 
-import { ColoringForm, type ColoringFormData, generatePrompt } from '@/components/coloring-form';
+import { GenerationForm, type GenerationFormData } from '@/components/generation-form';
 import { ColoringOutput } from '@/components/coloring-output';
 import { AuthDialog } from '@/components/auth-dialog';
 import { PasswordDialog } from '@/components/password-dialog';
@@ -43,8 +43,17 @@ export default function HomePage() {
     const [blobUrlCache, setBlobUrlCache] = React.useState<Record<string, string>>({});
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = React.useState(false);
     const [passwordDialogContext, setPasswordDialogContext] = React.useState<'initial' | 'retry'>('initial');
-    const [lastApiCallArgs, setLastApiCallArgs] = React.useState<[ColoringFormData] | null>(null);
+    const [lastApiCallArgs, setLastApiCallArgs] = React.useState<[GenerationFormData] | null>(null);
     const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
+    const [style, setStyle] = React.useState<GenerationFormData['style']>('auto');
+    const [prompt, setPrompt] = React.useState('');
+    const [n, setN] = React.useState([1]);
+    const [size, setSize] = React.useState<GenerationFormData['size']>('auto');
+    const [quality, setQuality] = React.useState<GenerationFormData['quality']>('auto');
+    const [outputFormat, setOutputFormat] = React.useState<GenerationFormData['output_format']>('png');
+    const [compression, setCompression] = React.useState([80]);
+    const [background, setBackground] = React.useState<GenerationFormData['background']>('auto');
+    const [moderation, setModeration] = React.useState<GenerationFormData['moderation']>('auto');
     
     // Use real authentication system
     const { user, refreshCredits } = useAuth();
@@ -122,7 +131,7 @@ export default function HomePage() {
         return 'image/png';
     };
 
-    const handleApiCall = async (formData: ColoringFormData) => {
+    const handleApiCall = async (formData: GenerationFormData) => {
         const startTime = Date.now();
         let durationMs = 0;
 
@@ -145,8 +154,11 @@ export default function HomePage() {
         }
 
         // Create photo preview URL for loading state
-        const previewUrl = URL.createObjectURL(formData.photo);
-        setPhotoPreview(previewUrl);
+        let previewUrl: string | null = null;
+        if (formData.source_images && formData.source_images.length > 0) {
+            previewUrl = URL.createObjectURL(formData.source_images[0]);
+            setPhotoPreview(previewUrl);
+        }
 
         const apiFormData = new FormData();
         if (isPasswordRequiredByBackend && clientPasswordHash) {
@@ -156,13 +168,15 @@ export default function HomePage() {
             setPasswordDialogContext('initial');
             setIsPasswordDialogOpen(true);
             setIsLoading(false);
-            URL.revokeObjectURL(previewUrl);
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
             setPhotoPreview(null);
             return;
         }
 
         // Generate the prompt based on form data
-        const prompt = generatePrompt(formData);
+        const prompt = formData.prompt;
         
         apiFormData.append('mode', 'generate');
         apiFormData.append('prompt', prompt);
@@ -172,10 +186,15 @@ export default function HomePage() {
         apiFormData.append('output_format', 'png');
         apiFormData.append('background', 'auto');
         apiFormData.append('moderation', 'auto');
-        
-        // Add the photo as an image file for the API
-        apiFormData.append('image_0', formData.photo, formData.photo.name);
+        apiFormData.append('style', formData.style);
 
+        if (formData.style === 'cartoon' && formData.source_images) {
+            apiFormData.append('scene_description', formData.scene_description || '');
+            formData.source_images.forEach((file, index) => {
+                apiFormData.append(`image_${index}`, file, file.name);
+            });
+        }
+        
         console.log('Sending request to /api/images with coloring page data');
         console.log('Generated prompt:', prompt);
 
@@ -277,7 +296,9 @@ export default function HomePage() {
             if (durationMs === 0) durationMs = Date.now() - startTime;
             setIsLoading(false);
             // Clean up photo preview
-            URL.revokeObjectURL(previewUrl);
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
             setPhotoPreview(null);
         }
     };
@@ -307,10 +328,32 @@ export default function HomePage() {
 
                 <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
                     <div className='relative flex h-[70vh] min-h-[600px] flex-col lg:col-span-1'>
-                        <ColoringForm
+                        <GenerationForm
                             onSubmit={handleApiCall}
                             isLoading={isLoading}
-                            userCredits={user?.credits || 0}
+                            currentMode='generate'
+                            onModeChange={() => {}}
+                            isPasswordRequiredByBackend={isPasswordRequiredByBackend}
+                            clientPasswordHash={clientPasswordHash}
+                            onOpenPasswordDialog={() => setIsPasswordDialogOpen(true)}
+                            prompt={prompt}
+                            setPrompt={setPrompt}
+                            n={n}
+                            setN={setN}
+                            size={size}
+                            setSize={setSize}
+                            quality={quality}
+                            setQuality={setQuality}
+                            outputFormat={outputFormat}
+                            setOutputFormat={setOutputFormat}
+                            compression={compression}
+                            setCompression={setCompression}
+                            background={background}
+                            setBackground={setBackground}
+                            moderation={moderation}
+                            setModeration={setModeration}
+                            style={style}
+                            setStyle={setStyle}
                         />
                     </div>
                     <div className='flex h-[70vh] min-h-[600px] flex-col lg:col-span-1'>

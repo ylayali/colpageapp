@@ -22,12 +22,16 @@ import {
     Loader2,
     BrickWall,
     Lock,
-    LockOpen
+    LockOpen,
+    Upload,
+    X
 } from 'lucide-react';
 import * as React from 'react';
 
 export type GenerationFormData = {
     prompt: string;
+    scene_description?: string;
+    source_images?: File[];
     n: number;
     size: '1024x1024' | '1536x1024' | '1024x1536' | 'auto';
     quality: 'low' | 'medium' | 'high' | 'auto';
@@ -35,6 +39,7 @@ export type GenerationFormData = {
     output_compression?: number;
     background: 'transparent' | 'opaque' | 'auto';
     moderation: 'low' | 'auto';
+    style: 'cartoon' | 'photorealistic' | 'auto';
 };
 
 type GenerationFormProps = {
@@ -61,6 +66,8 @@ type GenerationFormProps = {
     setBackground: React.Dispatch<React.SetStateAction<GenerationFormData['background']>>;
     moderation: GenerationFormData['moderation'];
     setModeration: React.Dispatch<React.SetStateAction<GenerationFormData['moderation']>>;
+    style: GenerationFormData['style'];
+    setStyle: React.Dispatch<React.SetStateAction<GenerationFormData['style']>>;
 };
 
 const RadioItemWithIcon = ({
@@ -110,9 +117,24 @@ export function GenerationForm({
     background,
     setBackground,
     moderation,
-    setModeration
+    setModeration,
+    style,
+    setStyle
 }: GenerationFormProps) {
+    const [sourceImages, setSourceImages] = React.useState<File[]>([]);
+    const [sceneDescription, setSceneDescription] = React.useState('');
     const showCompression = outputFormat === 'jpeg' || outputFormat === 'webp';
+    const isCartoonStyle = style === 'cartoon';
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files) {
+            setSourceImages(prev => [...prev, ...Array.from(event.target.files as FileList)]);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        setSourceImages(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -123,8 +145,13 @@ export function GenerationForm({
             quality,
             output_format: outputFormat,
             background,
-            moderation
+            moderation,
+            style
         };
+        if (isCartoonStyle) {
+            formData.scene_description = sceneDescription;
+            formData.source_images = sourceImages;
+        }
         if (showCompression) {
             formData.output_compression = compression[0];
         }
@@ -176,6 +203,76 @@ export function GenerationForm({
                             className='min-h-[80px] rounded-md border border-white/20 bg-black text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
                         />
                     </div>
+
+                    <div className='space-y-3'>
+                        <Label className='block text-white'>Style</Label>
+                        <RadioGroup
+                            value={style}
+                            onValueChange={(value) => setStyle(value as GenerationFormData['style'])}
+                            disabled={isLoading}
+                            className='flex flex-wrap gap-x-5 gap-y-3'>
+                            <RadioItemWithIcon value='auto' id='style-auto' label='Auto' Icon={Sparkles} />
+                            <RadioItemWithIcon value='photorealistic' id='style-photorealistic' label='Photorealistic' Icon={FileImage} />
+                            <RadioItemWithIcon value='cartoon' id='style-cartoon' label='Cartoon Portrait' Icon={Eraser} />
+                        </RadioGroup>
+                    </div>
+
+                    {isCartoonStyle && (
+                        <div className='space-y-3 rounded-md border border-white/20 bg-black/20 p-4'>
+                            <h3 className='text-md font-semibold text-white'>Cartoon Portrait Scene</h3>
+                            <div className='space-y-1.5'>
+                                <Label htmlFor='scene-description' className='text-white'>
+                                    Scene Description
+                                </Label>
+                                <Textarea
+                                    id='scene-description'
+                                    placeholder='e.g., in a field full of dandelions with ducks'
+                                    value={sceneDescription}
+                                    onChange={(e) => setSceneDescription(e.target.value)}
+                                    disabled={isLoading}
+                                    className='min-h-[60px] rounded-md border border-white/20 bg-black text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
+                                />
+                            </div>
+                            <div className='space-y-2'>
+                                <Label className='text-white'>Source Images</Label>
+                                <div className='grid grid-cols-3 gap-2'>
+                                    {sourceImages.map((file, index) => (
+                                        <div key={index} className='relative'>
+                                            <img
+                                                src={URL.createObjectURL(file)}
+                                                alt={`Source image ${index + 1}`}
+                                                className='h-24 w-24 rounded-md object-cover'
+                                            />
+                                            <Button
+                                                type='button'
+                                                variant='destructive'
+                                                size='icon'
+                                                className='absolute right-1 top-1 h-6 w-6'
+                                                onClick={() => removeImage(index)}
+                                                disabled={isLoading}>
+                                                <X className='h-4 w-4' />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <Label
+                                        htmlFor='source-images-upload'
+                                        className='flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-white/30 bg-black/20 text-white/60 hover:border-white/50 hover:text-white'>
+                                        <Upload className='h-8 w-8' />
+                                        <span>Upload</span>
+                                    </Label>
+                                </div>
+                                <input
+                                    id='source-images-upload'
+                                    type='file'
+                                    multiple
+                                    accept='image/*'
+                                    onChange={handleFileChange}
+                                    className='hidden'
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className='space-y-2'>
                         <Label htmlFor='n-slider' className='text-white'>
