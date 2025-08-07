@@ -298,7 +298,7 @@ export default function HomePage() {
             <div className='w-full max-w-7xl space-y-6'>
                 <div className='text-center mb-8'>
                     <h1 className='text-3xl font-bold text-white mb-2'>Personalized Coloring Pages</h1>
-                    <p className='text-white/60'>Upload a photo to create unique coloring pages</p>
+                    <p className='text-white/60'>Upload a photo to create unique coloring pages with multi-person scenes</p>
                 </div>
 
                 <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
