@@ -1,0 +1,10 @@
+This is a test file to verify the repository structure for Vercel deployment.
+
+Files should be at:
+- src/app/page.tsx
+- src/app/layout.tsx
+- src/components/
+- package.json
+- next.config.ts
+
+All at the root level of the repository.
