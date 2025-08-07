@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
         }
 
         let result: OpenAI.Images.ImagesResponse;
-        const model = 'gpt-image-1';
+        const generateModel = 'gpt-image-1'; // Use gpt-image-1 for generation
+        const editModel = 'dall-e-2'; // Use dall-e-2 for editing (if gpt-image-1 doesn't support editing)
 
         if (mode === 'generate') {
             const coloringPageType = formData.get('coloringPageType') as 'straight_copy' | 'facial_portrait' | 'cartoon_portrait' | null;
@@ -126,10 +127,10 @@ export async function POST(request: NextRequest) {
                     return NextResponse.json({ error: 'No source images provided for cartoon portrait.' }, { status: 400 });
                 }
 
-                // Step 1: Isolate subjects
+                // Step 1: Isolate subjects using dall-e-2 for editing
                 const isolatedSubjects = await Promise.all(sourceImages.map(async (image) => {
                     const response = await openai.images.edit({
-                        model,
+                        model: editModel,
                         prompt: 'remove the background and turn this person into a coloring page style character',
                         image: [image],
                         n: 1,
@@ -141,9 +142,9 @@ export async function POST(request: NextRequest) {
                     return Buffer.from(response.data[0].b64_json, 'base64');
                 }));
 
-                // Step 2: Generate scene
+                // Step 2: Generate scene using gpt-image-1
                 const sceneResponse = await openai.images.generate({
-                    model,
+                    model: generateModel,
                     prompt: sceneDescription || 'a simple, elegant background for a coloring page',
                     n: 1,
                     size: '1024x1024'
@@ -189,7 +190,7 @@ export async function POST(request: NextRequest) {
                     const quality = (formData.get('quality') as OpenAI.Images.ImageEditParams['quality']) || 'high';
 
                     const params: OpenAI.Images.ImageEditParams = {
-                        model,
+                        model: editModel, // Use dall-e-2 for editing
                         prompt,
                         image: [imageFile],
                         n: Math.max(1, Math.min(n || 1, 10)),
@@ -226,7 +227,7 @@ export async function POST(request: NextRequest) {
             const maskFile = formData.get('mask') as File | null;
 
             const params: OpenAI.Images.ImageEditParams = {
-                model,
+                model: editModel, // Use dall-e-2 for editing
                 prompt,
                 image: imageFiles,
                 n: Math.max(1, Math.min(n || 1, 10)),
