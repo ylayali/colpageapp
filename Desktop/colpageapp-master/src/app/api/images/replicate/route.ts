@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
-import { hasEnoughCredits, useCredits, canAccessMultiplePhotos } from '@/lib/credit-utils';
+import { hasEnoughCredits, useCredits, canAccessMultiplePhotos } from '../../../../lib/credit-utils';
 
 const outputDir = path.resolve(process.cwd(), 'generated-images');
 
