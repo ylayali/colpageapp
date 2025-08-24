@@ -172,6 +172,15 @@ export default function HomePage() {
         }
 
         // Add user email for credit checking
+        if (!user.email) {
+            setError('User email is required for credit checking.');
+            setIsLoading(false);
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                setPhotoPreview(null);
+            }
+            return;
+        }
         apiFormData.append('userEmail', user.email);
 
         // Ensure photo exists
@@ -337,6 +346,11 @@ export default function HomePage() {
         }
 
         // Add user email for credit checking
+        if (!user.email) {
+            setError('User email is required for credit checking.');
+            setIsLoading(false);
+            return;
+        }
         apiFormData.append('userEmail', user.email);
 
         // Add form data for multi-person API
