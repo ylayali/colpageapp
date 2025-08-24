@@ -4,25 +4,41 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
+interface CustomUser extends SupabaseUser {
+  credits: number
+  subscription_tier?: 'basic' | 'standard' | 'premium' | null
+}
+
 interface AuthContextType {
-  user: SupabaseUser | null
+  user: CustomUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
+  refreshCredits: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [user, setUser] = useState<CustomUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
+      if (session?.user) {
+        // Extend user with credits and subscription_tier (mock for now)
+        const customUser: CustomUser = {
+          ...session.user,
+          credits: 0, // Default credits
+          subscription_tier: null // Default tier
+        }
+        setUser(customUser)
+      } else {
+        setUser(null)
+      }
       setLoading(false)
     }
 
@@ -31,7 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
+        if (session?.user) {
+          // Extend user with credits and subscription_tier (mock for now)
+          const customUser: CustomUser = {
+            ...session.user,
+            credits: 0, // Default credits
+            subscription_tier: null // Default tier
+          }
+          setUser(customUser)
+        } else {
+          setUser(null)
+        }
         setLoading(false)
       }
     )
@@ -60,12 +86,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
+  const refreshCredits = () => {
+    // Placeholder implementation - in a real app this would refresh user data
+    console.log('Refreshing credits...')
+  }
+
   const value = {
     user,
     loading,
     signIn,
     signUp,
     signOut,
+    refreshCredits,
   }
 
   return (
